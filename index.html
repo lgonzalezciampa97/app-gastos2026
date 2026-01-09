@@ -9,251 +9,409 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        /* Animación suave para la lista */
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-active { border-bottom: 3px solid #4f46e5; color: #4f46e5; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen pb-10">
 
-    <div class="max-w-3xl mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto px-4 py-8">
         
+        <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800">📊 Finanzas 2026</h1>
-                <p class="text-slate-500 text-sm">Tus datos viven en este dispositivo</p>
+                <p class="text-slate-500 text-sm">Control mensual de gastos e ingresos</p>
             </div>
             <div class="flex gap-2">
                 <button onclick="exportData()" class="bg-white border border-slate-300 text-slate-600 px-3 py-1.5 rounded-lg text-sm hover:bg-slate-50 transition flex items-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-download"></i> Guardar Backup
+                    <i class="fa-solid fa-download"></i> Backup
                 </button>
                 <label class="bg-white border border-slate-300 text-slate-600 px-3 py-1.5 rounded-lg text-sm hover:bg-slate-50 transition flex items-center gap-2 shadow-sm cursor-pointer">
-                    <i class="fa-solid fa-upload"></i> Cargar Backup
+                    <i class="fa-solid fa-upload"></i> Cargar
                     <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(this)">
                 </label>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-emerald-50 p-5 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between">
-                <span class="text-emerald-600 font-semibold text-sm uppercase tracking-wide">Ingresos</span>
-                <span class="text-2xl font-bold text-emerald-700 mt-1" id="money-plus">+$0.00</span>
+        <!-- Resumen Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 shadow-sm">
+                <span class="text-emerald-600 font-semibold text-xs uppercase tracking-wide">Ingresos</span>
+                <span class="text-xl font-bold text-emerald-700 block mt-1" id="total-income">$0.00</span>
             </div>
-            <div class="bg-rose-50 p-5 rounded-2xl border border-rose-100 shadow-sm flex flex-col justify-between">
-                <span class="text-rose-600 font-semibold text-sm uppercase tracking-wide">Gastos</span>
-                <span class="text-2xl font-bold text-rose-700 mt-1" id="money-minus">-$0.00</span>
+            <div class="bg-rose-50 p-4 rounded-2xl border border-rose-100 shadow-sm">
+                <span class="text-rose-600 font-semibold text-xs uppercase tracking-wide">Gastos Pagados</span>
+                <span class="text-xl font-bold text-rose-700 block mt-1" id="total-paid">$0.00</span>
             </div>
-            <div class="bg-indigo-600 p-5 rounded-2xl shadow-lg text-white flex flex-col justify-between relative overflow-hidden">
+            <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100 shadow-sm">
+                <span class="text-amber-600 font-semibold text-xs uppercase tracking-wide">Por Pagar</span>
+                <span class="text-xl font-bold text-amber-700 block mt-1" id="total-pending">$0.00</span>
+            </div>
+            <div class="bg-indigo-600 p-4 rounded-2xl shadow-lg text-white relative overflow-hidden">
                 <div class="absolute right-0 top-0 opacity-10 transform translate-x-2 -translate-y-2">
-                    <i class="fa-solid fa-wallet text-6xl"></i>
+                    <i class="fa-solid fa-wallet text-5xl"></i>
                 </div>
-                <span class="text-indigo-200 font-semibold text-sm uppercase tracking-wide">Saldo Disponible</span>
-                <span class="text-3xl font-bold mt-1" id="balance">$0.00</span>
+                <span class="text-indigo-200 font-semibold text-xs uppercase tracking-wide">Saldo</span>
+                <span class="text-xl font-bold block mt-1" id="balance">$0.00</span>
             </div>
         </div>
 
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+        <!-- Barra de Progreso de Gastos -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-semibold text-slate-600">Progreso de Pagos del Mes</span>
+                <span class="text-sm text-slate-500" id="progress-text">0 de 0 pagados</span>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-3">
+                <div class="bg-gradient-to-r from-indigo-500 to-emerald-500 h-3 rounded-full transition-all duration-500" id="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Formulario para Agregar -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6">
+            <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-plus-circle text-indigo-500"></i> Agregar Nuevo
+            </h3>
             <form id="form" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2 md:col-span-1">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
-                        <input type="date" id="date" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tipo</label>
+                        <select id="type" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer" onchange="updateCategoryOptions()">
+                            <option value="gasto">📋 Gasto Planificado</option>
+                            <option value="ingreso">💰 Ingreso</option>
+                        </select>
                     </div>
-                    <div class="col-span-2 md:col-span-1">
+                    <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Monto</label>
                         <input type="number" id="amount" placeholder="0.00" step="0.01" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
                     </div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="md:col-span-2">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label>
-                        <input type="text" id="text" placeholder="¿En qué gastaste?" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
+                        <input type="date" id="date" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría</label>
                         <select id="category" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-                            <option value="ingreso">💰 Ingreso</option>
-                            <option value="comida">🍔 Comida</option>
-                            <option value="transporte">🚌 Transporte</option>
-                            <option value="casa">🏠 Casa</option>
-                            <option value="ocio">🎉 Ocio</option>
-                            <option value="salud">💊 Salud</option>
-                            <option value="otros">📦 Otros</option>
                         </select>
                     </div>
                 </div>
-
-                <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow-md hover:shadow-lg active:scale-[0.99]">
-                    Agregar Movimiento
-                </button>
+                
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label>
+                        <input type="text" id="text" placeholder="Ej: Luz de enero, Netflix, etc." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                    </div>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 rounded-xl transition shadow-md hover:shadow-lg active:scale-[0.99] self-end">
+                        <i class="fa-solid fa-plus"></i> Agregar
+                    </button>
+                </div>
             </form>
         </div>
 
-        <div>
-            <div class="flex justify-between items-end mb-4 border-b border-slate-200 pb-2">
-                <h3 class="font-bold text-lg text-slate-700">Historial</h3>
-                <button onclick="confirmClear()" class="text-xs text-rose-500 hover:text-rose-700 hover:underline">Limpiar Todo</button>
+        <!-- Tabs de Navegación -->
+        <div class="flex border-b border-slate-200 mb-4">
+            <button onclick="switchTab('pending')" id="tab-pending" class="px-4 py-2 font-semibold text-sm tab-active transition">
+                <i class="fa-solid fa-clock"></i> Pendientes <span id="pending-count" class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs ml-1">0</span>
+            </button>
+            <button onclick="switchTab('paid')" id="tab-paid" class="px-4 py-2 font-semibold text-sm text-slate-500 hover:text-slate-700 transition">
+                <i class="fa-solid fa-check-circle"></i> Pagados <span id="paid-count" class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-xs ml-1">0</span>
+            </button>
+            <button onclick="switchTab('income')" id="tab-income" class="px-4 py-2 font-semibold text-sm text-slate-500 hover:text-slate-700 transition">
+                <i class="fa-solid fa-coins"></i> Ingresos <span id="income-count" class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-xs ml-1">0</span>
+            </button>
+        </div>
+
+        <!-- Lista de Items -->
+        <div id="list-container">
+            <ul id="list" class="space-y-3"></ul>
+            <div id="empty-state" class="text-center py-10 text-slate-400 hidden">
+                <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                <p>No hay items en esta sección</p>
             </div>
-            <ul id="list" class="space-y-3">
-                </ul>
+        </div>
+
+        <!-- Botón Limpiar -->
+        <div class="mt-6 text-center">
+            <button onclick="confirmClear()" class="text-xs text-rose-400 hover:text-rose-600 hover:underline">
+                <i class="fa-solid fa-trash"></i> Limpiar Todo el Historial
+            </button>
         </div>
     </div>
 
     <script>
-        // --- Referencias ---
-        const balance = document.getElementById('balance');
-        const money_plus = document.getElementById('money-plus');
-        const money_minus = document.getElementById('money-minus');
+        // --- Referencias DOM ---
+        const totalIncomeEl = document.getElementById('total-income');
+        const totalPaidEl = document.getElementById('total-paid');
+        const totalPendingEl = document.getElementById('total-pending');
+        const balanceEl = document.getElementById('balance');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
         const list = document.getElementById('list');
+        const emptyState = document.getElementById('empty-state');
         const form = document.getElementById('form');
-        const text = document.getElementById('text');
-        const amount = document.getElementById('amount');
+        const typeInput = document.getElementById('type');
+        const textInput = document.getElementById('text');
+        const amountInput = document.getElementById('amount');
         const dateInput = document.getElementById('date');
         const categoryInput = document.getElementById('category');
 
-        // --- Configuración de Categorías (Colores Tailwind) ---
-        const styles = {
-            ingreso:    { color: 'text-emerald-600', bg: 'bg-emerald-100', icon: 'fa-arrow-trend-up' },
-            comida:     { color: 'text-orange-600',  bg: 'bg-orange-100',  icon: 'fa-utensils' },
-            transporte: { color: 'text-blue-600',    bg: 'bg-blue-100',    icon: 'fa-bus' },
-            casa:       { color: 'text-purple-600',  bg: 'bg-purple-100',  icon: 'fa-house' },
-            ocio:       { color: 'text-pink-600',    bg: 'bg-pink-100',    icon: 'fa-ticket' },
-            salud:      { color: 'text-teal-600',    bg: 'bg-teal-100',    icon: 'fa-heart-pulse' },
-            otros:      { color: 'text-slate-600',   bg: 'bg-slate-100',   icon: 'fa-box' }
+        // --- Categorías Expandidas ---
+        const categories = {
+            // Ingresos
+            ingreso: {
+                salario: { label: '💰 Salario', color: 'text-emerald-600', bg: 'bg-emerald-100', icon: 'fa-money-bill-wave' },
+                freelance: { label: '💼 Freelance', color: 'text-emerald-600', bg: 'bg-emerald-100', icon: 'fa-laptop' },
+                otros_ingresos: { label: '📥 Otros Ingresos', color: 'text-emerald-600', bg: 'bg-emerald-100', icon: 'fa-hand-holding-dollar' }
+            },
+            // Gastos
+            gastos: {
+                // Servicios
+                luz: { label: '💡 Luz', color: 'text-yellow-600', bg: 'bg-yellow-100', icon: 'fa-lightbulb' },
+                gas: { label: '🔥 Gas', color: 'text-orange-600', bg: 'bg-orange-100', icon: 'fa-fire' },
+                agua: { label: '💧 Agua', color: 'text-cyan-600', bg: 'bg-cyan-100', icon: 'fa-droplet' },
+                internet: { label: '🌐 Internet', color: 'text-blue-600', bg: 'bg-blue-100', icon: 'fa-wifi' },
+                celular: { label: '📱 Celular', color: 'text-violet-600', bg: 'bg-violet-100', icon: 'fa-mobile-screen' },
+                netflix: { label: '🎬 Netflix', color: 'text-red-600', bg: 'bg-red-100', icon: 'fa-tv' },
+                hbo: { label: '📺 HBO', color: 'text-purple-600', bg: 'bg-purple-100', icon: 'fa-film' },
+                disney: { label: '✨ Disney+', color: 'text-blue-600', bg: 'bg-blue-100', icon: 'fa-wand-magic-sparkles' },
+                spotify: { label: '🎵 Spotify', color: 'text-green-600', bg: 'bg-green-100', icon: 'fa-music' },
+                // Casa
+                alquiler: { label: '🏠 Alquiler/Hipoteca', color: 'text-slate-600', bg: 'bg-slate-100', icon: 'fa-house' },
+                mantenimiento: { label: '🔧 Mantenimiento', color: 'text-slate-600', bg: 'bg-slate-100', icon: 'fa-wrench' },
+                // Comida
+                supermercado: { label: '🛒 Supermercado', color: 'text-emerald-600', bg: 'bg-emerald-100', icon: 'fa-cart-shopping' },
+                comida: { label: '🍔 Comida/Delivery', color: 'text-orange-600', bg: 'bg-orange-100', icon: 'fa-utensils' },
+                // Transporte
+                transporte: { label: '🚌 Transporte', color: 'text-blue-600', bg: 'bg-blue-100', icon: 'fa-bus' },
+                gasolina: { label: '⛽ Gasolina', color: 'text-amber-600', bg: 'bg-amber-100', icon: 'fa-gas-pump' },
+                // Salud
+                salud: { label: '💊 Salud', color: 'text-teal-600', bg: 'bg-teal-100', icon: 'fa-heart-pulse' },
+                gimnasio: { label: '🏋️ Gimnasio', color: 'text-indigo-600', bg: 'bg-indigo-100', icon: 'fa-dumbbell' },
+                // Familia
+                ninos: { label: '👶 Niños', color: 'text-pink-600', bg: 'bg-pink-100', icon: 'fa-baby' },
+                escuela: { label: '🎓 Escuela', color: 'text-indigo-600', bg: 'bg-indigo-100', icon: 'fa-graduation-cap' },
+                // Entretenimiento
+                salidas: { label: '🍻 Salidas', color: 'text-amber-600', bg: 'bg-amber-100', icon: 'fa-champagne-glasses' },
+                cine: { label: '🎬 Cine', color: 'text-rose-600', bg: 'bg-rose-100', icon: 'fa-clapperboard' },
+                regalos: { label: '🎁 Regalos', color: 'text-pink-600', bg: 'bg-pink-100', icon: 'fa-gift' },
+                ocio: { label: '🎉 Ocio', color: 'text-fuchsia-600', bg: 'bg-fuchsia-100', icon: 'fa-face-laugh' },
+                // Otros
+                ropa: { label: '👕 Ropa', color: 'text-purple-600', bg: 'bg-purple-100', icon: 'fa-shirt' },
+                educacion: { label: '📚 Educación', color: 'text-blue-600', bg: 'bg-blue-100', icon: 'fa-book' },
+                otros: { label: '📦 Otros', color: 'text-slate-600', bg: 'bg-slate-100', icon: 'fa-box' }
+            }
         };
 
-        // --- Estado Inicial ---
-        // Clave única para localStorage
-        const STORAGE_KEY = 'gastos_app_2026_data';
-        
-        let transactions = localStorage.getItem(STORAGE_KEY) !== null 
-            ? JSON.parse(localStorage.getItem(STORAGE_KEY)) 
-            : [];
+        // --- Estado ---
+        const STORAGE_KEY = 'gastos_app_2026_v2';
+        let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        let currentTab = 'pending';
 
-        // Establecer fecha de hoy
+        // Fecha de hoy por defecto
         dateInput.valueAsDate = new Date();
 
-        // --- Funciones Principales ---
-
-        function addTransaction(e) {
-            e.preventDefault();
-            if(text.value.trim() === '' || amount.value.trim() === '') return alert('Por favor llena los campos');
-
-            const type = categoryInput.value;
-            // Si es 'ingreso', positivo. Si no, negativo (para cálculo interno)
-            const rawAmount = +amount.value;
-            const finalAmount = type === 'ingreso' ? rawAmount : -rawAmount;
-
-            const transaction = {
-                id: generateID(),
-                text: text.value,
-                amount: finalAmount,
-                date: dateInput.value,
-                category: type
-            };
-
-            transactions.push(transaction);
-            addTransactionDOM(transaction);
-            updateValues();
-            updateLocalStorage();
+        // --- Funciones de Categorías ---
+        function updateCategoryOptions() {
+            const type = typeInput.value;
+            categoryInput.innerHTML = '';
             
-            // Reset form
-            text.value = '';
-            amount.value = '';
-            // No reseteamos fecha para facilitar ingresos múltiples del mismo día
-        }
-
-        function generateID() {
-            return Math.floor(Math.random() * 100000000);
-        }
-
-        function addTransactionDOM(transaction) {
-            const item = document.createElement('li');
-            const style = styles[transaction.category] || styles.otros;
-            const sign = transaction.amount < 0 ? '-' : '+';
-            const val = Math.abs(transaction.amount);
+            const cats = type === 'ingreso' ? categories.ingreso : categories.gastos;
             
-            item.classList.add('fade-in', 'bg-white', 'p-4', 'rounded-xl', 'shadow-sm', 'border', 'border-slate-100', 'flex', 'justify-between', 'items-center', 'group');
-
-            item.innerHTML = `
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-full ${style.bg} flex items-center justify-center ${style.color} text-lg shrink-0">
-                        <i class="fa-solid ${style.icon}"></i>
-                    </div>
-                    <div>
-                        <p class="font-bold text-slate-800">${transaction.text}</p>
-                        <p class="text-xs text-slate-400 font-medium">
-                            ${transaction.date} &bull; <span class="capitalize">${transaction.category}</span>
-                        </p>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <p class="font-bold ${transaction.amount > 0 ? 'text-emerald-600' : 'text-slate-700'} text-lg">
-                        ${sign}$${val.toFixed(2)}
-                    </p>
-                    <button class="text-xs text-rose-300 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition" onclick="removeTransaction(${transaction.id})">
-                        Eliminar
-                    </button>
-                </div>
-            `;
-
-            // Insertar al inicio (stack visual)
-            list.prepend(item);
-        }
-
-        function updateValues() {
-            const amounts = transactions.map(transaction => transaction.amount);
-            const total = amounts.reduce((acc, item) => acc + item, 0).toFixed(2);
-            
-            const income = amounts
-                .filter(item => item > 0)
-                .reduce((acc, item) => acc + item, 0)
-                .toFixed(2);
-
-            const expense = (amounts
-                .filter(item => item < 0)
-                .reduce((acc, item) => acc + item, 0) * -1)
-                .toFixed(2);
-
-            balance.innerText = `$${total}`;
-            money_plus.innerText = `+$${income}`;
-            money_minus.innerText = `-$${expense}`;
-        }
-
-        function removeTransaction(id) {
-            transactions = transactions.filter(transaction => transaction.id !== id);
-            updateLocalStorage();
-            init();
-        }
-
-        function updateLocalStorage() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-        }
-
-        function confirmClear() {
-            if(confirm("¿Borrar todo el historial? No se puede deshacer.")) {
-                transactions = [];
-                updateLocalStorage();
-                init();
+            for (const [key, val] of Object.entries(cats)) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = val.label;
+                categoryInput.appendChild(option);
             }
         }
 
-        // --- Funciones de Backup (JSON) ---
-        
-        function exportData() {
-            if(transactions.length === 0) return alert("No hay datos para exportar");
+        function getCategoryStyle(category) {
+            return categories.ingreso[category] || categories.gastos[category] || categories.gastos.otros;
+        }
+
+        // --- Funciones CRUD ---
+        function addItem(e) {
+            e.preventDefault();
             
-            const dataStr = JSON.stringify(transactions, null, 2);
-            const blob = new Blob([dataStr], { type: "application/json" });
+            if (!textInput.value.trim() || !amountInput.value) {
+                return alert('Por favor completa todos los campos');
+            }
+
+            const item = {
+                id: Date.now(),
+                text: textInput.value.trim(),
+                amount: parseFloat(amountInput.value),
+                date: dateInput.value,
+                category: categoryInput.value,
+                type: typeInput.value,
+                paid: typeInput.value === 'ingreso' // Ingresos se marcan como "procesados" automáticamente
+            };
+
+            items.push(item);
+            saveAndRender();
+            
+            // Reset form
+            textInput.value = '';
+            amountInput.value = '';
+        }
+
+        function deleteItem(id) {
+            if (confirm('¿Eliminar este item?')) {
+                items = items.filter(item => item.id !== id);
+                saveAndRender();
+            }
+        }
+
+        function togglePaid(id) {
+            const item = items.find(i => i.id === id);
+            if (item && item.type === 'gasto') {
+                item.paid = !item.paid;
+                if (item.paid) {
+                    item.paidDate = new Date().toISOString().slice(0, 10);
+                } else {
+                    delete item.paidDate;
+                }
+                saveAndRender();
+            }
+        }
+
+        // --- Renderizado ---
+        function renderList() {
+            list.innerHTML = '';
+            
+            let filteredItems = [];
+            
+            if (currentTab === 'pending') {
+                filteredItems = items.filter(i => i.type === 'gasto' && !i.paid);
+            } else if (currentTab === 'paid') {
+                filteredItems = items.filter(i => i.type === 'gasto' && i.paid);
+            } else if (currentTab === 'income') {
+                filteredItems = items.filter(i => i.type === 'ingreso');
+            }
+
+            // Ordenar por fecha
+            filteredItems.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if (filteredItems.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+
+            filteredItems.forEach(item => {
+                const li = document.createElement('li');
+                const style = getCategoryStyle(item.category);
+                
+                li.className = 'fade-in bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center group';
+                
+                const isExpense = item.type === 'gasto';
+                const amountColor = isExpense ? 'text-rose-600' : 'text-emerald-600';
+                const amountSign = isExpense ? '-' : '+';
+
+                li.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full ${style.bg} flex items-center justify-center ${style.color} text-lg shrink-0">
+                            <i class="fa-solid ${style.icon}"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800">${item.text}</p>
+                            <p class="text-xs text-slate-400 font-medium">
+                                ${item.date} &bull; <span class="capitalize">${style.label.replace(/^[^\s]+\s/, '')}</span>
+                                ${item.paidDate ? `&bull; <span class="text-emerald-500">Pagado ${item.paidDate}</span>` : ''}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <p class="font-bold ${amountColor} text-lg">
+                            ${amountSign}$${item.amount.toFixed(2)}
+                        </p>
+                        <div class="flex gap-1">
+                            ${isExpense ? `
+                                <button onclick="togglePaid(${item.id})" class="p-2 rounded-lg ${item.paid ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400 hover:bg-emerald-100 hover:text-emerald-600'} transition" title="${item.paid ? 'Marcar como pendiente' : 'Marcar como pagado'}">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                            ` : ''}
+                            <button onclick="deleteItem(${item.id})" class="p-2 rounded-lg bg-slate-100 text-slate-400 hover:bg-rose-100 hover:text-rose-600 transition opacity-0 group-hover:opacity-100" title="Eliminar">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                list.appendChild(li);
+            });
+        }
+
+        function updateTotals() {
+            const incomeItems = items.filter(i => i.type === 'ingreso');
+            const paidItems = items.filter(i => i.type === 'gasto' && i.paid);
+            const pendingItems = items.filter(i => i.type === 'gasto' && !i.paid);
+
+            const totalIncome = incomeItems.reduce((acc, i) => acc + i.amount, 0);
+            const totalPaid = paidItems.reduce((acc, i) => acc + i.amount, 0);
+            const totalPending = pendingItems.reduce((acc, i) => acc + i.amount, 0);
+            const balance = totalIncome - totalPaid;
+
+            totalIncomeEl.textContent = `$${totalIncome.toFixed(2)}`;
+            totalPaidEl.textContent = `$${totalPaid.toFixed(2)}`;
+            totalPendingEl.textContent = `$${totalPending.toFixed(2)}`;
+            balanceEl.textContent = `$${balance.toFixed(2)}`;
+
+            // Actualizar contadores de tabs
+            document.getElementById('pending-count').textContent = pendingItems.length;
+            document.getElementById('paid-count').textContent = paidItems.length;
+            document.getElementById('income-count').textContent = incomeItems.length;
+
+            // Barra de progreso
+            const totalExpenses = paidItems.length + pendingItems.length;
+            const progress = totalExpenses > 0 ? (paidItems.length / totalExpenses) * 100 : 0;
+            progressBar.style.width = `${progress}%`;
+            progressText.textContent = `${paidItems.length} de ${totalExpenses} pagados`;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Actualizar estilos de tabs
+            document.querySelectorAll('[id^="tab-"]').forEach(t => {
+                t.classList.remove('tab-active');
+                t.classList.add('text-slate-500');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('tab-active');
+            document.getElementById(`tab-${tab}`).classList.remove('text-slate-500');
+            
+            renderList();
+        }
+
+        function saveAndRender() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            renderList();
+            updateTotals();
+        }
+
+        function confirmClear() {
+            if (confirm('¿Borrar TODO el historial? Esta acción no se puede deshacer.')) {
+                items = [];
+                saveAndRender();
+            }
+        }
+
+        // --- Backup/Restore ---
+        function exportData() {
+            if (items.length === 0) return alert('No hay datos para exportar');
+            
+            const data = JSON.stringify(items, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             
             const a = document.createElement('a');
-            const date = new Date().toISOString().slice(0,10);
-            a.download = `backup_gastos_2026_${date}.json`;
+            a.download = `backup_gastos_${new Date().toISOString().slice(0, 10)}.json`;
             a.href = url;
             a.click();
-            alert("Backup descargado. Guárdalo seguro.");
+            alert('Backup descargado correctamente');
         }
 
         function importData(input) {
@@ -264,38 +422,32 @@
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if(Array.isArray(data)) {
-                        if(confirm(`Se cargarán ${data.length} movimientos. Esto reemplazará lo actual. ¿Seguir?`)) {
-                            transactions = data;
-                            updateLocalStorage();
-                            init();
-                            alert("Datos cargados correctamente");
+                    if (Array.isArray(data)) {
+                        if (confirm(`Se cargarán ${data.length} items. ¿Reemplazar datos actuales?`)) {
+                            items = data;
+                            saveAndRender();
+                            alert('Datos cargados correctamente');
                         }
                     } else {
-                        alert("El archivo no tiene el formato correcto.");
+                        alert('Formato de archivo incorrecto');
                     }
-                } catch(err) {
-                    alert("Error al leer el archivo JSON.");
+                } catch (err) {
+                    alert('Error al leer el archivo');
                 }
             };
             reader.readAsText(file);
-            // Limpiar input para permitir cargar el mismo archivo dos veces si es necesario
             input.value = '';
         }
 
         // --- Inicialización ---
         function init() {
-            list.innerHTML = '';
-            // Ordenamos por fecha (más reciente primero) para visualización
-            const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
-            
-            sortedTransactions.forEach(addTransactionDOM);
-            updateValues();
+            updateCategoryOptions();
+            renderList();
+            updateTotals();
         }
 
+        form.addEventListener('submit', addItem);
         init();
-        form.addEventListener('submit', addTransaction);
-
     </script>
 </body>
 </html>
