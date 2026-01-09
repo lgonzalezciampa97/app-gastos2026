@@ -258,6 +258,11 @@
         // Fecha de hoy por defecto
         dateInput.valueAsDate = new Date();
 
+        // --- Formateo de Moneda ---
+        function formatCurrency(amount) {
+            return amount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
         // --- Funciones de Categorías ---
         function updateCategoryOptions() {
             const type = typeInput.value;
@@ -372,7 +377,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <p class="font-bold ${amountColor} text-lg">
-                            ${amountSign}$${item.amount.toFixed(2)}
+                            ${amountSign}$${formatCurrency(item.amount)}
                         </p>
                         <div class="flex gap-1">
                             ${isExpense ? `
@@ -401,10 +406,10 @@
             const totalPending = pendingItems.reduce((acc, i) => acc + i.amount, 0);
             const balance = totalIncome - totalPaid;
 
-            totalIncomeEl.textContent = `$${totalIncome.toFixed(2)}`;
-            totalPaidEl.textContent = `$${totalPaid.toFixed(2)}`;
-            totalPendingEl.textContent = `$${totalPending.toFixed(2)}`;
-            balanceEl.textContent = `$${balance.toFixed(2)}`;
+            totalIncomeEl.textContent = `$${formatCurrency(totalIncome)}`;
+            totalPaidEl.textContent = `$${formatCurrency(totalPaid)}`;
+            totalPendingEl.textContent = `$${formatCurrency(totalPending)}`;
+            balanceEl.textContent = `$${formatCurrency(balance)}`;
 
             // Actualizar contadores de tabs
             document.getElementById('pending-count').textContent = pendingItems.length;
